@@ -29,6 +29,20 @@ export function buildHttpApp(): express.Express {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
 
+  app.get("/", (_req: Request, res: Response) => {
+    res.status(200).json({
+      name: "mcp-refund-v0",
+      description:
+        "Safety layer for AI agents that issue refunds. Sandbox-only V0.",
+      endpoints: {
+        health: "GET /health",
+        issue_refund: "POST /issue_refund",
+        logs: "GET /logs",
+      },
+      repo: "https://github.com/jiten-github78/mcp-refund-v0",
+    });
+  });
+
   app.get("/health", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok" });
   });
