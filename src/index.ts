@@ -161,6 +161,7 @@ export function buildHttpApp(): express.Express {
 function statusForError(code: string): number {
   switch (code) {
     case "refunds_disabled":
+    case "demo_disabled":
       return 503;
     case "missing_payment_id":
     case "missing_request_id":

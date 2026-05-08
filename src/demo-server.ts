@@ -78,15 +78,17 @@ function generateDemoRefundId(): string {
 export async function executeDemoRefund(
   rawInput: unknown,
 ): Promise<DemoRefundResult> {
-  // Step 1: kill switch — same env var as the real path.
-  if (process.env.REFUNDS_ENABLED !== "true") {
+  // Step 1: kill switch — DEMO_ENABLED is independent of REFUNDS_ENABLED so
+  // the public demo can be open while the real /issue_refund path stays
+  // locked down on the same deployment.
+  if (process.env.DEMO_ENABLED !== "true") {
     return {
       ok: false,
       demo: true,
       note: DEMO_NOTE,
       error: {
-        code: "refunds_disabled",
-        message: "Refunds disabled by system",
+        code: "demo_disabled",
+        message: "Demo disabled by system",
       },
     };
   }
