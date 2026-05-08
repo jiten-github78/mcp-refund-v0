@@ -29,6 +29,20 @@ curl -X POST http://localhost:3000/issue_refund \
   -d '{"payment_id":"pay_xxx","amount":100,"request_id":"test-001","reason":"first refund"}'
 ```
 
+## Live demo (proof of life only)
+
+The deployment is live at: https://web-production-60b12.up.railway.app
+
+Test it:
+```bash
+curl https://web-production-60b12.up.railway.app/health
+# Returns: {"status":"ok"}
+```
+
+This URL is for verifying the project compiles and runs in production. Do NOT use the /issue_refund endpoint here for your own tests — it uses my sandbox keys and writes to my audit log.
+
+For real testing, clone the repo and use your own Razorpay test keys (see Quickstart above).
+
 ## The 4 golden rules
 1. request_id is mandatory
 2. Duplicates are blocked at our layer (Razorpay never called twice)
@@ -37,11 +51,6 @@ curl -X POST http://localhost:3000/issue_refund \
 
 ## Sandbox-only by design
 Runs ONLY in payment provider sandboxes (Razorpay test mode). Production keys (rzp_live_*) are rejected at startup. Why: refunds touch real money. V0 proves the architecture in a fully isolated test environment.
-
-## Live demo (proof-of-life only)
-The /health endpoint is live at: [INSERT RAILWAY URL HERE]
-
-This is for verifying the project compiles and runs. Do NOT use it for real refund attempts. Self-host with your own keys for real use.
 
 ## What's NOT in V0
 - Stripe / Paddle / Adyen support (V1)
