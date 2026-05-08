@@ -45,6 +45,15 @@ export function getRazorpayClient(): Razorpay {
     };
     throw err;
   }
+  if (keyId.startsWith("rzp_live_")) {
+    const err: RazorpayClientError = {
+      type: "razorpay_client_error",
+      code: "live_key_rejected",
+      message:
+        "Production Razorpay keys (rzp_live_*) are rejected. V0 is sandbox-only — use a test key (rzp_test_*).",
+    };
+    throw err;
+  }
   cachedClient = new Razorpay({
     key_id: keyId,
     key_secret: keySecret,

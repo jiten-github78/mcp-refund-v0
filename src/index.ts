@@ -104,9 +104,25 @@ async function startHttp(): Promise<void> {
 }
 
 /**
+ * Eager sandbox-only check. Refuses to boot if RAZORPAY_KEY_ID is a
+ * production key (rzp_live_*). Skips silently if no key is set, so the
+ * lazy path in razorpay-client.ts can produce its own error.
+ */
+function assertSandboxOnly(): void {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  if (typeof keyId === "string" && keyId.startsWith("rzp_live_")) {
+    process.stderr.write(
+      "[mcp-refund] fatal: production Razorpay keys (rzp_live_*) are rejected. V0 is sandbox-only — use a test key (rzp_test_*).\n",
+    );
+    process.exit(1);
+  }
+}
+
+/**
  * Process entry. Selects HTTP or MCP mode based on the --mcp flag.
  */
 async function main(): Promise<void> {
+  assertSandboxOnly();
   const isMcpMode = process.argv.includes("--mcp");
   if (isMcpMode) {
     await startMcpStdio();
