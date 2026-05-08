@@ -3,6 +3,20 @@
 
 Status: V0 sandbox-only · MIT License · Built on Anthropic MCP
 
+## Try it in 10 seconds
+
+No setup, no Razorpay keys, no signup. Hit the demo endpoint:
+
+```bash
+curl -X POST https://web-production-60b12.up.railway.app/demo/issue_refund \
+  -H "Content-Type: application/json" \
+  -d '{"payment_id":"pay_TEST","amount":1500,"request_id":"my-first-test","reason":"trying it out"}'
+```
+
+You get back a realistic refund response with a `rfnd_demo_*` ID. Hit the same command again — you get the original refund back, not a new one. That's the idempotency check working with zero setup. Browse the demo audit log at https://web-production-60b12.up.railway.app/demo/logs.
+
+Demo endpoints are rate-limited to 30 req/hr per IP and write to a separate audit log so they never touch real refund traffic. Convinced? See the Quickstart below to run it for real with your own Razorpay keys.
+
 ## The problem
 AI agents in production today can suggest a refund but can't safely execute one. They lack idempotency, rollback, and audit trails. Calling Stripe/Razorpay APIs directly from agents leads to double-refunds, silent failures, and no audit when something goes wrong.
 
@@ -28,20 +42,6 @@ curl -X POST http://localhost:3000/issue_refund \
   -H "Content-Type: application/json" \
   -d '{"payment_id":"pay_xxx","amount":100,"request_id":"test-001","reason":"first refund"}'
 ```
-
-## Live demo (proof of life only)
-
-The deployment is live at: https://web-production-60b12.up.railway.app
-
-Test it:
-```bash
-curl https://web-production-60b12.up.railway.app/health
-# Returns: {"status":"ok"}
-```
-
-This URL is for verifying the project compiles and runs in production. Do NOT use the /issue_refund endpoint here for your own tests — it uses my sandbox keys and writes to my audit log.
-
-For real testing, clone the repo and use your own Razorpay test keys (see Quickstart above).
 
 ## The 4 golden rules
 1. request_id is mandatory

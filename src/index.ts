@@ -19,7 +19,45 @@ import express, {
 } from "express";
 
 import { executeRefund, startMcpStdio } from "./mcp-server.js";
-import { readLogs } from "./storage.js";
+import { executeDemoRefund } from "./demo-server.js";
+import { readLogs, DEMO_LOGS_PATH } from "./storage.js";
+
+/**
+ * In-memory per-IP rate limiter for /demo routes. 30 requests per IP
+ * per rolling hour. State resets on process restart, which is fine —
+ * Railway redeploys also wipe the demo log file, so the two are
+ * effectively in sync.
+ */
+const DEMO_RATE_WINDOW_MS = 60 * 60 * 1000;
+const DEMO_RATE_MAX = 30;
+const demoRateBuckets = new Map<string, number[]>();
+
+function rateLimitDemo(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const ip = req.ip ?? "unknown";
+  const now = Date.now();
+  const recent = (demoRateBuckets.get(ip) ?? []).filter(
+    (t) => now - t < DEMO_RATE_WINDOW_MS,
+  );
+  if (recent.length >= DEMO_RATE_MAX) {
+    const oldestRetryMs = DEMO_RATE_WINDOW_MS - (now - recent[0]);
+    res.status(429).json({
+      ok: false,
+      demo: true,
+      error: {
+        code: "rate_limited",
+        message: `Demo rate limit exceeded: ${DEMO_RATE_MAX} requests per hour per IP. Retry in ~${Math.ceil(oldestRetryMs / 1000)}s.`,
+      },
+    });
+    return;
+  }
+  recent.push(now);
+  demoRateBuckets.set(ip, recent);
+  next();
+}
 
 /**
  * Builds the Express app. Pulled into its own function so future tests
@@ -27,6 +65,9 @@ import { readLogs } from "./storage.js";
  */
 export function buildHttpApp(): express.Express {
   const app = express();
+  // Trust Railway's reverse proxy so req.ip reflects the real client IP
+  // for the demo rate limiter.
+  app.set("trust proxy", true);
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/", (_req: Request, res: Response) => {
@@ -38,6 +79,9 @@ export function buildHttpApp(): express.Express {
         health: "GET /health",
         issue_refund: "POST /issue_refund",
         logs: "GET /logs",
+        demo_issue_refund:
+          "POST /demo/issue_refund (try without Razorpay keys, rate-limited)",
+        demo_logs: "GET /demo/logs",
       },
       repo: "https://github.com/jiten-github78/mcp-refund-v0",
     });
@@ -61,6 +105,31 @@ export function buildHttpApp(): express.Express {
       next(err);
     }
   });
+
+  app.post(
+    "/demo/issue_refund",
+    rateLimitDemo,
+    async (req: Request, res: Response) => {
+      const result = await executeDemoRefund(req.body);
+      const status = result.ok
+        ? 200
+        : statusForError((result as { error: { code: string } }).error.code);
+      res.status(status).json(result);
+    },
+  );
+
+  app.get(
+    "/demo/logs",
+    rateLimitDemo,
+    async (_req: Request, res: Response, next: NextFunction) => {
+      try {
+        const logs = await readLogs(DEMO_LOGS_PATH);
+        res.status(200).json(logs);
+      } catch (err: unknown) {
+        next(err);
+      }
+    },
+  );
 
   app.use(
     (
