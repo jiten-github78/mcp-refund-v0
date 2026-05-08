@@ -1,0 +1,33 @@
+{
+  "name": "mcp-refund-v0",
+  "version": "0.1.0",
+  "description": "Razorpay for AI agents — V0. An MCP server that gates AI-issued Razorpay refunds behind a kill switch, idempotency check, and audit log.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-refund": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:mcp": "node dist/index.js --mcp",
+    "dev": "tsx watch src/index.ts",
+    "dev:mcp": "tsx src/index.ts --mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "razorpay": "^2.9.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
