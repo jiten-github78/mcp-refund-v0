@@ -24,7 +24,27 @@ AI agents in production today can suggest a refund but can't safely execute one.
 - Single MCP/HTTP endpoint that AI agents call to issue refunds
 - Built-in idempotency (same request_id never refunds twice)
 - Kill switch (disable all refunds with one env var)
-- Tamper-proof audit log (every action recorded)
+- Append-only audit log (probably appears 1-2 times)
+
+  ## Why this exists
+AI agents can suggest refunds today. But safely executing financial actions requires:
+- Idempotency (so retries don't double-charge)
+- Audit logging (so compliance and post-mortems are possible)
+- Execution controls (kill switch, approval workflows)
+- Rollback-safe flows (so half-completed actions can be undone)
+
+mcp-refund-v0 is a first step toward that infrastructure layer.
+
+## How it fits together
+```
+AI Agent (Claude / Cursor / custom)
+        ↓
+mcp-refund-v0  (validation, kill switch, idempotency)
+        ↓
+Razorpay Sandbox API
+        ↓
+Append-only audit log (logs.json)
+```
 
 ## 60-second quickstart
 ```bash
